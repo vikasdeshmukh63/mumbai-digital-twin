@@ -1,0 +1,465 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Mumbai Digital Twin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@78..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/app.css">
+<link rel="preload" as="image" href="img/landing.webp" fetchpriority="high">
+<img id="poster" src="img/landing.webp" alt="" aria-hidden="true" fetchpriority="high" decoding="sync">
+<script>document.body.classList.add('landing');</script>
+
+<!-- Identity mark: a skyline standing on the waterline, with its reflected
+     twin beneath — the real city above, the modelled city below. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <!-- Aqua above the waterline is the real city; violet below is the
+         modelled twin — the same two colours the interface uses for
+         "system" and "simulation". -->
+    <linearGradient id="mtTower" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF9A45"/>
+      <stop offset=".55" stop-color="#E5621A"/>
+      <stop offset="1" stop-color="#B8460E"/>
+    </linearGradient>
+    <linearGradient id="mtRefl" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D2541A" stop-opacity=".75"/>
+      <stop offset=".5" stop-color="#B8460E" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#B8460E" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mtWater" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E5621A" stop-opacity=".55"/>
+      <stop offset=".45" stop-color="#FFB36B"/>
+      <stop offset="1" stop-color="#C8501A" stop-opacity=".8"/>
+    </linearGradient>
+    <linearGradient id="mtFrame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F07A22" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#B8460E" stop-opacity=".55"/>
+    </linearGradient>
+    <symbol id="mtMark" viewBox="0 0 28 28">
+      <rect x=".9" y=".9" width="26.2" height="26.2" rx="7.4" fill="none"
+            stroke="url(#mtFrame)" stroke-width="1.15"/>
+      <!-- the real city: an uneven skyline, tallest left of centre -->
+      <g fill="url(#mtTower)">
+        <rect x="6.9"  y="11.5" width="2.7" height="5.7"  rx=".55"/>
+        <rect x="10.7" y="5.5"  width="3.6" height="11.7" rx=".6"/>
+        <rect x="15.4" y="8.9"  width="2.6" height="8.3"  rx=".55"/>
+        <rect x="19.1" y="12.9" width="2.1" height="4.3"  rx=".5"/>
+      </g>
+      <!-- waterline -->
+      <rect x="4.6" y="17.2" width="18.8" height="1.05" rx=".52" fill="url(#mtWater)"/>
+      <!-- the modelled twin, fading -->
+      <g fill="url(#mtRefl)">
+        <rect x="6.9"  y="18.9" width="2.7" height="2.8" rx=".55"/>
+        <rect x="10.7" y="18.9" width="3.6" height="5.6" rx=".6"/>
+        <rect x="15.4" y="18.9" width="2.6" height="4.0" rx=".55"/>
+        <rect x="19.1" y="18.9" width="2.1" height="2.1" rx=".5"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div id="app">
+  <header id="topbar">
+    <a class="brand" id="brandHome" href="#" title="Mumbai Digital Twin — back to the whole-city view">
+      <svg class="mark" aria-hidden="true" focusable="false"><use href="#mtMark"></use></svg>
+      <span class="wordmark"><b>Mumbai</b><i>Digital&nbsp;Twin</i></span>
+      <span class="tagline">Urban Intelligence Platform</span>
+    </a>
+
+    <div id="searchWrap">
+      <span class="ico" aria-hidden="true">⌕</span>
+      <input id="globalSearch" type="text" autocomplete="off" spellcheck="false"
+             placeholder="Search areas, roads, stations, hospitals, projects…"
+             aria-label="Search the digital twin">
+      <kbd>/</kbd>
+      <div id="searchResults" hidden role="listbox"></div>
+    </div>
+
+    <div class="topspace"></div>
+
+    <div class="chipbar">
+      <span class="chip hide-sm" id="chipData" title="Verified live data sources connected">
+        <i class="dot missing"></i><span>0 verified sources</span>
+      </span>
+      <span class="chip hide-sm" id="chipRole"><i class="dot verified"></i><span id="roleName">Planner</span></span>
+      <span class="chip live" id="chipSim"><i class="dot sim"></i><span id="simChipText">Demo dataset</span></span>
+      <button class="tbtn" id="btnPresent">▶ Play demo</button>
+    </div>
+  </header>
+
+  <div id="shell">
+    <nav id="rail" aria-label="Main navigation"></nav>
+
+    <aside id="panel" aria-label="Tool panel">
+      <div class="panel-head">
+        <h2 id="panelTitle">Explore</h2>
+        <span class="sub" id="panelSub"></span>
+      </div>
+      <div id="panelBody">
+        <section class="pane" data-pane="explore"></section>
+        <section class="pane" data-pane="layers" hidden></section>
+        <section class="pane" data-pane="analytics" hidden></section>
+
+        <section class="pane" data-pane="simulation" hidden>
+          <div class="seg" id="simTabs">
+            <button data-sim="flood" class="on">Flood</button>
+            <button data-sim="traffic">Traffic</button>
+            <button data-sim="infra">Infrastructure</button>
+            <button data-sim="building">Building</button>
+            <button data-sim="emergency">Emergency</button>
+          </div>
+          <div id="simRunBar" class="simrun" hidden>
+            <span class="dot"></span><span id="simRunText">Simulation running</span>
+            <button class="btn stop" id="simStopAll">■ Stop all</button>
+          </div>
+
+          <!-- flood -->
+          <div class="sec" data-simpane="flood">
+            <h3>Rainfall scenario</h3>
+            <div class="field">
+              <label for="fRain">Rainfall depth <b><span id="fRainV">200</span> mm</b></label>
+              <input type="range" id="fRain" min="50" max="400" step="10" value="200">
+            </div>
+            <div class="field">
+              <label for="fHours">Duration <b><span id="fHoursV">6</span> h</b></label>
+              <input type="range" id="fHours" min="1" max="24" step="1" value="6">
+            </div>
+            <div class="field">
+              <label for="fTide">Tide level at outfalls <b><span id="fTideV">3.2</span> m</b></label>
+              <input type="range" id="fTide" min="0.5" max="5" step="0.1" value="3.2">
+            </div>
+            <div class="field">
+              <label for="fDrain">Drainage efficiency <b><span id="fDrainV">1.00</span>×</b></label>
+              <input type="range" id="fDrain" min="0.3" max="1.6" step="0.05" value="1">
+            </div>
+            <div class="btnrow">
+              <button class="btn run" id="fRun">Run flood simulation</button>
+              <button class="btn" id="fPreset">200 mm / 6 h preset</button>
+              <button class="btn stop" id="fStop" title="Stop the rain and clear the flood">■ Stop</button>
+            </div>
+            <div id="floodOut"></div>
+          </div>
+
+          <!-- traffic -->
+          <div class="sec" data-simpane="traffic" hidden>
+            <h3>Network disruption</h3>
+            <div class="field">
+              <label for="tRoad">Corridor to close</label>
+              <select id="tRoad"></select>
+            </div>
+            <div class="field">
+              <label for="tDur">Closure duration</label>
+              <select id="tDur">
+                <option>1 hour</option><option>6 hours</option>
+                <option selected>24 hours</option><option>7 days</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="tPeak">Demand level <b><span id="tPeakV">1.00</span>× peak</b></label>
+              <input type="range" id="tPeak" min="0.6" max="1.4" step="0.05" value="1">
+            </div>
+            <label class="layer" style="grid-template-columns:auto 1fr">
+              <span class="toggle" id="tFlood" role="switch" aria-checked="false"></span>
+              <span class="nm">Also close links flooded in the current scenario</span>
+            </label>
+            <div class="btnrow">
+              <button class="btn run" id="tRun">Run traffic simulation</button>
+              <button class="btn" id="tReset">Reset network</button>
+            </div>
+            <div id="trafficOut"></div>
+          </div>
+
+          <!-- infrastructure -->
+          <div class="sec" data-simpane="infra" hidden>
+            <h3>Hypothetical infrastructure</h3>
+            <div class="field">
+              <label for="iType">Asset type</label>
+              <select id="iType">
+                <option>Metro Station</option><option>Hospital</option><option>School</option>
+                <option>Fire Station</option><option>Bridge</option><option>Road interchange</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="iRad">Catchment radius <b><span id="iRadV">800</span> m</b></label>
+              <input type="range" id="iRad" min="300" max="2500" step="50" value="800">
+            </div>
+            <div class="btnrow">
+              <button class="btn run" id="iPlace">Place on map</button>
+              <button class="btn" id="iClear">Clear placements</button>
+            </div>
+            <p class="note">Click anywhere on the twin after pressing <strong>Place on map</strong>. The engine reports catchment, newly served area and connectivity.</p>
+            <div id="infraOut"></div>
+          </div>
+
+          <!-- building -->
+          <div class="sec" data-simpane="building" hidden>
+            <h3>Hypothetical building</h3>
+            <div class="field">
+              <label for="bUse">Use class</label>
+              <select id="bUse">
+                <option>Residential</option><option>Commercial</option>
+                <option>Mixed use</option><option>Institutional</option><option>Industrial</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="bFloors">Floors <b><span id="bFloorsV">30</span></b></label>
+              <input type="range" id="bFloors" min="2" max="90" step="1" value="30">
+            </div>
+            <div class="field">
+              <label for="bFoot">Footprint <b><span id="bFootV">1200</span> m²</b></label>
+              <input type="range" id="bFoot" min="200" max="6000" step="100" value="1200">
+            </div>
+            <div class="btnrow">
+              <button class="btn run" id="bPlace">Place on map</button>
+              <button class="btn" id="bClear">Clear placements</button>
+            </div>
+            <div id="buildOut"></div>
+          </div>
+
+          <!-- emergency -->
+          <div class="sec" data-simpane="emergency" hidden>
+            <h3>Emergency response</h3>
+            <div class="field">
+              <label for="eType">Emergency type</label>
+              <select id="eType">
+                <option>Flood</option><option>Fire</option><option>Major road accident</option>
+                <option>Building collapse</option><option>Cyclone</option><option>Earthquake</option>
+              </select>
+            </div>
+            <label class="layer" style="grid-template-columns:auto 1fr">
+              <span class="toggle on" id="eAvoid" role="switch" aria-checked="true"></span>
+              <span class="nm">Avoid links flooded in the current scenario</span>
+            </label>
+            <div class="btnrow">
+              <button class="btn run" id="ePick">Pick incident location</button>
+              <button class="btn" id="eClear">Clear route</button>
+            </div>
+            <div id="emergOut"></div>
+            <h3>City-wide response coverage</h3>
+            <div class="field">
+              <label for="eTurnout">Turnout delay <b><span id="eTurnoutV">1.5</span> min</b></label>
+              <input type="range" id="eTurnout" min="0" max="5" step="0.5" value="1.5">
+            </div>
+            <div class="btnrow">
+              <button class="btn run" id="eCover">Compute coverage</button>
+              <button class="btn" id="eCoverClear">Clear bands</button>
+            </div>
+            <div id="coverOut"></div>
+          </div>
+
+          <div class="sec">
+            <h3>Scenario comparison</h3>
+            <div class="btnrow">
+              <button class="btn" id="cSaveA">Save as A</button>
+              <button class="btn" id="cSaveB">Save as B</button>
+              <button class="btn" id="cRun">Compare</button>
+            </div>
+            <div id="compareOut"></div>
+          </div>
+        </section>
+
+        <section class="pane" data-pane="ai" hidden>
+          <div id="aiLog"></div>
+          <div class="sec">
+            <h3>Try asking</h3>
+            <div class="suggest" id="aiSuggest"></div>
+          </div>
+          <form id="aiForm" autocomplete="off">
+            <input type="text" id="aiInput" placeholder="Ask Mumbai AI…" aria-label="Ask Mumbai AI">
+            <button class="btn run" type="submit">Ask</button>
+          </form>
+        </section>
+
+        <section class="pane" data-pane="infrastructure" hidden></section>
+        <section class="pane" data-pane="projects" hidden></section>
+        <section class="pane" data-pane="alerts" hidden></section>
+        <section class="pane" data-pane="reports" hidden></section>
+        <section class="pane" data-pane="data" hidden></section>
+        <section class="pane" data-pane="admin" hidden></section>
+      </div>
+    </aside>
+
+    <main id="stage">
+      <canvas id="map" aria-label="Mumbai 3D digital twin viewport"></canvas>
+
+      <div id="attrib" class="overlay">
+        Mumbai Digital Twin <span class="mono">phase-1.0.0</span> · Roads &amp; rail © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors (ODbL) ·
+        <b>Buildings, terrain, density and all movement are simulated</b> · 0 verified live sources
+      </div>
+
+      <div id="mapTools" class="overlay">
+        <div id="compass" title="Reset bearing to north">
+          <svg viewBox="0 0 24 24" class="needle" id="needle" aria-hidden="true">
+            <path d="M12 3 L15.4 13 L12 11 L8.6 13 Z" fill="#3FD3E6"></path>
+            <path d="M12 21 L8.6 13 L12 15 L15.4 13 Z" fill="#48586D"></path>
+          </svg>
+        </div>
+        <div class="tgroup">
+          <button id="btnZoomIn" title="Zoom in">＋</button>
+          <button id="btnZoomOut" title="Zoom out">−</button>
+        </div>
+        <div class="tgroup">
+          <button id="btn3D" class="on" title="Toggle 2D / 3D view">3D</button>
+          <button id="btnLabels" class="on" title="Toggle labels">Aa</button>
+          <button id="btnStyle" class="on" title="Switch between hologram and lit styles">◈</button>
+          <button id="btnLegend" title="Show the map key" aria-label="Map key">
+            <svg viewBox="0 0 24 24"><rect x="4" y="5" width="4" height="4" rx="1"></rect><path d="M11 7h9"></path><rect x="4" y="15" width="4" height="4" rx="1"></rect><path d="M11 17h9"></path></svg>
+          </button>
+        </div>
+        <div class="tgroup">
+          <button data-tool="distance" title="Measure distance">
+            <svg viewBox="0 0 24 24"><path d="M3 17 L21 7"></path><circle cx="4" cy="17" r="2"></circle><circle cx="20" cy="7" r="2"></circle></svg>
+          </button>
+          <button data-tool="area" title="Measure area">
+            <svg viewBox="0 0 24 24"><path d="M4 6 L18 4 L20 16 L7 20 Z"></path></svg>
+          </button>
+          <button data-tool="radius" title="Measure radius">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 12 L20 12"></path></svg>
+          </button>
+          <button data-tool="select" title="Select an area for statistics">
+            <svg viewBox="0 0 24 24"><path d="M4 8 V4 h4 M16 4 h4 v4 M20 16 v4 h-4 M8 20 H4 v-4"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="hud" class="overlay" aria-hidden="true"></div>
+
+      <div id="measureOut" class="overlay" hidden></div>
+
+      <div id="legend" class="overlay"></div>
+
+      <div id="minimap" class="overlay"><canvas title="Region overview — click to fly there"></canvas><span>MMR</span><button class="mmx" id="mmClose" title="Close map" aria-label="Close map">×</button></div>
+      <button id="mmOpen" class="overlay" title="Show region map" hidden>▣ Map</button>
+      <div id="readout" class="overlay">
+        <div id="scaleWrap"><span class="pill" id="scaleLabel">—</span><div id="scaleBar" style="width:80px"></div></div>
+        <div class="pill" id="coordOut">19.0900° N  72.8800° E</div>
+        <div class="pill" id="vexOut" hidden>—</div>
+        <div class="pill" id="perfOut">—</div>
+      </div>
+
+      <footer id="timebar">
+        <div class="seg" id="tlMode">
+          <button data-tl="clock" class="on">Clock</button>
+          <button data-tl="storm">Storm</button>
+          <button data-tl="years">Years</button>
+        </div>
+        <button id="playBtn" title="Play" aria-label="Play">▶</button>
+        <div id="timeTrack">
+          <div class="tlhead"><span class="lbl" id="tlLabel">Time of day</span><span class="val mono" id="tlValue">18:18</span></div>
+          <input type="range" id="timeSlider" min="0" max="1439" step="5" value="1098" aria-label="Timeline">
+          <div id="timeTicks"></div>
+        </div>
+        <div id="simState"><span class="tag sim">Simulation</span><span id="simStateText">No scenario running</span></div>
+      </footer>
+    </main>
+
+    <aside id="context" class="hidden" aria-label="Context panel">
+      <div class="panel-head">
+        <h2 id="ctxTitle">Selection</h2>
+        <button class="sub" id="ctxClose" style="cursor:pointer">Close ✕</button>
+      </div>
+      <div id="ctxBody"></div>
+    </aside>
+
+    <nav id="mobileTabs" aria-label="Sections"></nav>
+  </div>
+</div>
+
+<div id="landing">
+  <div id="landingTop">
+    <a class="lesds" href="https://www.esds.co.in/" target="_blank" rel="noopener" title="ESDS — enabling futurability"><img src="img/esds-logo.png" alt="ESDS" width="132" height="100"></a>
+    <nav class="lnav" aria-label="Sections">
+      <button data-go="explore"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Explore</button>
+      <button data-go="simulation"><svg viewBox="0 0 24 24"><path d="M4 18c3-8 6-8 8-4s5 4 8-4"/></svg>Simulation</button>
+      <button data-go="ai"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9l-4.7 1.8L12 15.5l-1.8-4.7L5.5 9l4.7-1.3z"/><path d="M18 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>Mumbai AI</button>
+      <button data-go="data"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg>Data</button>
+    </nav>
+    <button class="lgo" id="btnLogin"><svg class="li" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Log in <svg class="ar" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+  </div>
+  <div id="landingMid">
+    <div class="hero">
+      <div class="eyebrow2"><span class="eb-dot"></span>Urban Intelligence Platform</div>
+      <h1><span class="l1">Plan smarter</span><span class="l3">with a living</span><span class="l4">Digital Twin<i>.</i></span></h1>
+      <p class="problem2">Mumbai decides on <b>floods, traffic and new buildings</b> in silos — this twin shows their combined impact first.</p>
+      <p class="sub">One living 3D model of the whole metropolitan region. Explore it, stress-test it and compare decisions — with every number traced back to the dataset it came from.</p>
+      <div class="cta">
+        <button class="go" id="btnExplore">Explore Mumbai Twin Demo <span aria-hidden="true">→</span></button>
+      </div>
+      <ul class="caps" aria-label="What you can simulate">
+        <li><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>Flood</li>
+        <li><svg viewBox="0 0 24 24"><path d="M5 16l2-6h10l2 6M5 16h14v3H5zM8 19v1M16 19v1"/></svg>Traffic</li>
+        <li><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg>Emergency</li>
+        <li><svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V9l6-4 6 4v11M10 20v-5h4v5"/></svg>Infrastructure</li>
+        <li><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 3.5 6.6L4 20l1.3-3.6A7.9 7.9 0 0 1 4 12z"/></svg>Mumbai AI</li>
+      </ul>
+      <aside class="lstats" aria-label="Model at a glance">
+        <div class="ls-lab"><span class="lc-dot"></span>Live model<em>simulated</em></div>
+        <div><b id="fBuildings">—</b><span>Structures</span></div>
+        <div><b id="fRoads">—</b><span>km arterials</span></div>
+        <div><b id="fStations">—</b><span>Stations</span></div>
+        <div><b id="fZones">—</b><span>Zones</span></div>
+      </aside>
+      <section class="lsolve2" aria-label="Problems it helps solve">
+        <h2>Problems it helps solve</h2>
+        <ul>
+          <li><i class="ic"><svg viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg></i><b>Flooding</b><span>Shows which roads flood when it rains</span></li>
+          <li><i class="ic"><svg viewBox="0 0 24 24"><path d="M5 16l2-6h10l2 6M5 16h14v3H5z"/></svg></i><b>Traffic jams</b><span>Shows where traffic gets stuck</span></li>
+          <li><i class="ic"><svg viewBox="0 0 24 24"><path d="M12 4v16M4 12h16"/></svg></i><b>Slow help</b><span>Finds places ambulances can't reach fast</span></li>
+          <li><i class="ic"><svg viewBox="0 0 24 24"><path d="M4 20h16M6 20V9l6-4 6 4v11"/></svg></i><b>New buildings</b><span>Checks if roads and trains can cope</span></li>
+          <li><i class="ic"><svg viewBox="0 0 24 24"><path d="M4 6h7v7H4zM13 11h7v7h-7z"/></svg></i><b>Teams apart</b><span>One shared map for every department</span></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div id="present" class="off">
+  <div id="presentTop"><i style="width:0%"></i></div>
+  <div id="presentCard">
+    <div class="step" id="presentStep">Step 1 of 7</div>
+    <h3 id="presentTitle">—</h3>
+    <p id="presentBody">—</p>
+    <div class="ptimer"><i id="pTimer"></i></div>
+    <div class="ctl">
+      <button class="btn" id="pPrev">← Back</button>
+      <button class="btn" id="pPlay">❚❚ Pause</button>
+      <button class="btn run" id="pNext">Next →</button>
+      <button class="btn" id="pExit">Exit</button>
+      <div class="dots" id="pDots"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<div id="bootLoad" role="status" aria-live="polite"><span class="bl-ring"></span><span>Building the 3D city…</span></div>
+<script>
+/* Paint the landing page first, then build the city: the model takes a few
+   seconds to assemble, and a blank screen for that long reads as broken. */
+(function () {
+  document.body.classList.add('landing');          // landing chrome from the first paint
+  /* a click on Explore / nav / Log in before the app is ready is remembered and replayed */
+  let pending = null;
+  const early = e => { const t = e.target.closest('#btnExplore, #btnLogin, #landing .lnav [data-go]'); if (!t || window.__twinReady) return;
+    e.preventDefault(); e.stopPropagation(); pending = t; const l = document.getElementById('bootLoad'); if (l) l.querySelector('span:last-child').textContent = 'Opening as soon as the city is ready…'; };
+  document.addEventListener('click', early, true);
+  /* the still of the landing view is on screen from the first paint; once the
+     live city has drawn a couple of frames it crossfades into it */
+  const swapPoster = () => { const p = document.getElementById('poster'); if (!p) return;
+    let n = 0; const tick = () => { if (++n < 4) return requestAnimationFrame(tick);
+      p.classList.add('off'); setTimeout(() => p.remove(), 1100); };
+    requestAnimationFrame(tick); };
+  const files = ['data', 'osm', 'geo', 'city', 'render', 'sim', 'motion', 'ai', 'ui'];
+  let i = 0;
+  const next = () => {
+    if (i >= files.length) { window.__twinReady = true; swapPoster(); document.removeEventListener('click', early, true); const l = document.getElementById('bootLoad'); if (l) { l.classList.add('done'); setTimeout(() => l.remove(), 600); } if (pending) setTimeout(() => pending.click(), 50); return; }
+    const s = document.createElement('script'); s.src = 'js/' + files[i++] + '.js'; s.async = false;
+    s.onload = () => setTimeout(next, 0);
+    s.onerror = () => { const l = document.getElementById('bootLoad'); if (l) l.querySelector('span:last-child').textContent = 'Could not load the city model. Please refresh.'; };
+    document.body.appendChild(s);
+  };
+  requestAnimationFrame(() => requestAnimationFrame(next));
+})();
+</script>
+
+</body></html>
